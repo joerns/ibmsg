@@ -4,8 +4,8 @@ List Infiniband devices on the host.
 Author: Jörn Schumacher <joern.schumacher@cern.ch>
 */
 
-#include "stdio.h"
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include "infiniband/verbs.h"
 
 int
