@@ -23,7 +23,14 @@ enum {
 	IBMSG_RESET_TO_INIT_FAILED,
 	IBMSG_INIT_TO_RTR_FAILED,
 	IBMSG_RTR_TO_RTS_FAILED,
-	IBMSG_DISCONNECT_FAILED
+	IBMSG_DISCONNECT_FAILED,
+	IBMSG_ALLOC_FAILED,
+	IBMSG_REG_MR_FAILED,
+	IBMSG_DEREG_MR_FAILED,
+	IBMSG_POST_RECV_FAILED,
+	IBMSG_POST_SEND_FAILED,
+	IBMSG_POLL_CQ_FAILED,
+	IBMSG_COMPLETION_FAILED
 };
 
 typedef struct {
@@ -41,9 +48,22 @@ typedef struct {
 	uint8_t is_global;
 } ibmsg_address;
 
+typedef struct {
+	void* addr;
+	size_t length;
+	struct ibv_mr* mr;
+} ibmsg_message;
+
 int ibmsg_open(ibmsg_connection* conn, const char* name, uint8_t portid);
 int ibmsg_close(ibmsg_connection* conn);
 int ibmsg_connect(ibmsg_connection* conn, ibmsg_address addr);
 int ibmsg_disconnect(ibmsg_connection* conn);
+int ibmsg_alloc(ibmsg_connection* conn, ibmsg_message* msg, size_t length);
+int ibmsg_free(ibmsg_message* msg);
+int ibmsg_recv(ibmsg_connection* conn, ibmsg_message* msg, uint64_t* handle);
+int ibmsg_send(ibmsg_connection* conn, ibmsg_message* msg, uint64_t* handle);
+int ibmsg_wait_recv(ibmsg_connection* conn);
+int ibmsg_wait_send(ibmsg_connection* conn);
+
 
 #endif

@@ -1,5 +1,5 @@
 /*
-Send a single message over the given Infiniband device and port.
+Receives a single message over the given Infiniband device and port.
 
 Author: Jörn Schumacher <joern.schumacher@cern.ch>
 */
@@ -9,7 +9,7 @@ Author: Jörn Schumacher <joern.schumacher@cern.ch>
 #include <string.h>
 #include "ibmsg.h"
 
-#define APPLICATION_NAME "ibmsg-send"
+#define APPLICATION_NAME "ibmsg-recv"
 
 
 #define TRACE(x)   \
@@ -47,8 +47,8 @@ main(int argc, char** argv)
 	TRACE( ibmsg_connect(&conn, addr) );
 	TRACE( ibmsg_alloc(&conn, &msg, 4096) );
 
-	TRACE( ibmsg_send(&conn, &msg, &handle) );
-	TRACE( ibmsg_wait_send(&conn) );
+	TRACE( ibmsg_recv(&conn, &msg, &handle) );
+	TRACE( ibmsg_wait_recv(&conn) );
 
 	TRACE( ibmsg_free(&msg) );
 	TRACE( ibmsg_disconnect(&conn) );
