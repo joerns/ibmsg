@@ -2,11 +2,12 @@
 #define IBMSG_H
 
 #include "infiniband/verbs.h"
+#include "rdma/rdma_cma.h"
 
 #define IBMSG_MIN_CQE    (1)
 #define IBMSG_MAX_WR     (128)
 #define IBMSG_MAX_SGE    (2)
-#define IBMSG_MAX_INLINE (2048)
+#define IBMSG_MAX_INLINE (1024)
 #define IBMSG_HOP_LIMIT  (255)
 #define IBMSG_MAX_DEST_RD_ATOMIC (1)
 #define IBMSG_MAX_RD_ATOMIC (1)
@@ -30,7 +31,10 @@ enum {
 	IBMSG_POST_RECV_FAILED,
 	IBMSG_POST_SEND_FAILED,
 	IBMSG_POLL_CQ_FAILED,
-	IBMSG_COMPLETION_FAILED
+	IBMSG_COMPLETION_FAILED,
+	IBMSG_RDMA_EVENT_CHANNEL_FAILED,
+	IBMSG_RDMA_INIT_FAILED,
+	IBMSG_RDMA_DESTROY_FAILED
 };
 
 typedef struct {
@@ -40,6 +44,8 @@ typedef struct {
 	struct ibv_cq* tx_cq;
 	struct ibv_pd* pd;
 	struct ibv_qp* qp;
+	struct rdma_event_channel* event_channel;
+	struct rdma_cm_id* cmid;
 } ibmsg_connection;
 
 typedef struct {
@@ -64,6 +70,5 @@ int ibmsg_recv(ibmsg_connection* conn, ibmsg_message* msg, uint64_t* handle);
 int ibmsg_send(ibmsg_connection* conn, ibmsg_message* msg, uint64_t* handle);
 int ibmsg_wait_recv(ibmsg_connection* conn);
 int ibmsg_wait_send(ibmsg_connection* conn);
-
 
 #endif

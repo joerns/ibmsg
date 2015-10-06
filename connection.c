@@ -81,9 +81,31 @@ rtr_to_rts(ibmsg_connection* conn)
 }
 
 
+static int
+init_rdma(ibmsg_connection* conn)
+{
+	if(rdma_create_id(conn->event_channel, &conn->cmid, (void*)conn, RDMA_PS_TCP))
+		return 1;
+	return 0;
+}
+
+
+static int
+destroy_rdma(ibmsg_connection* conn)
+{
+	if(rdma_destroy_id(conn->cmid))
+		return 1;
+	conn->cmid = NULL;
+	return 0;
+}
+
+
 int
 ibmsg_connect(ibmsg_connection* conn, ibmsg_address addr)
 {
+	if(init_rdma(conn))
+		return IBMSG_RDMA_INIT_FAILED;
+
 	if(reset_to_init(conn))
 		return IBMSG_RESET_TO_INIT_FAILED;
 
@@ -100,5 +122,8 @@ ibmsg_connect(ibmsg_connection* conn, ibmsg_address addr)
 int
 ibmsg_disconnect(ibmsg_connection* conn)
 {
+	if(destroy_rdma(conn))
+		return IBMSG_RDMA_DESTROY_FAILED;
+
 	return IBMSG_OK;
 }

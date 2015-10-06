@@ -125,6 +125,25 @@ destroy_qp(ibmsg_connection* conn)
 }
 
 
+static int
+init_rdma(ibmsg_connection* conn)
+{
+	conn->event_channel = rdma_create_event_channel();
+	if(conn->event_channel == NULL)
+		return IBMSG_RDMA_EVENT_CHANNEL_FAILED;
+	return IBMSG_OK;
+}
+
+
+static int
+destroy_rdma(ibmsg_connection* conn)
+{
+	rdma_destroy_event_channel(conn->event_channel);
+	conn->event_channel = NULL;
+	return IBMSG_OK;
+}
+
+
 int
 ibmsg_open(ibmsg_connection* conn, const char* name, uint8_t portid)
 {
@@ -147,6 +166,10 @@ ibmsg_open(ibmsg_connection* conn, const char* name, uint8_t portid)
 	if(result != 0)
 		return result;
 
+	result = init_rdma(conn);
+	if(result != 0)
+		return result;
+
 	return IBMSG_OK;	
 }
 
@@ -155,6 +178,10 @@ int
 ibmsg_close(ibmsg_connection* conn)
 {
 	int result;
+
+	result = destroy_rdma(conn);
+	if(result != 0)
+		return result;
 
 	result = destroy_qp(conn);
 	if(result != 0)
