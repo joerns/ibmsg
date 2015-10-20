@@ -1,12 +1,12 @@
 LDLIBS:=-libverbs -lrdmacm
 CFLAGS:=-Wall -Werror -pedantic -g -std=gnu99
 
-all: lsdev ibmsg-rdma-send ibmsg-rdma-recv
+all: lsdev ibmsg-send ibmsg-recv
 
-ibmsg-rdma-send: ibmsg-rdma-send.o ibmsg_rdma.o
-ibmsg-rdma-recv: ibmsg-rdma-recv.o ibmsg_rdma.o
+ibmsg-send: ibmsg-send.o ibmsg.o
+ibmsg-recv: ibmsg-recv.o ibmsg.o
 lsdev: lsdev.o
 
 .PHONY: clean
 clean:
-	rm -f ibmsg-rdma-send ibmsg-rdma-recv lsdev *.o
+	rm -f ibmsg-send ibmsg-recv lsdev *.o

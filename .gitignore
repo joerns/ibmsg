@@ -3,5 +3,4 @@
 lsdev
 ibmsg-send
 ibmsg-recv
-ibmsg-rdma-recv
-ibmsg-rdma-send
+

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "ibmsg_rdma.h"
+#include "ibmsg.h"
 
 #define APPLICATION_NAME "ibmsg-rdma-send"
 #define MSGSIZE (4096)

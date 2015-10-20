@@ -6,7 +6,7 @@
 #include <sys/epoll.h>
 #include <rdma/rdma_verbs.h>
 
-#include "ibmsg_rdma.h"
+#include "ibmsg.h"
 
 #define IBMSG_DEBUG
 
