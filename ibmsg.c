@@ -199,7 +199,7 @@ init_qp_param(struct ibv_qp_init_attr* qp_init_attr)
 static void
 init_conn_param(struct rdma_conn_param* conn_param)
 {
-    memset(conn_param, 0, sizeof conn_param);    
+    memset(conn_param, 0, sizeof *conn_param);
     conn_param->responder_resources = IBMSG_RESPONDER_RESOURCES;
     conn_param->flow_control = IBMSG_HW_FLOW_CONTROL;
     conn_param->retry_count = IBMSG_RETRY_COUNT;
