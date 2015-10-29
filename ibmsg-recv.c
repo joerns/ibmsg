@@ -5,11 +5,11 @@
 #define APPLICATION_NAME "ibmsg-rdma-recv"
 #define MAX_CONNECTIONS (64)
 
-ibmsg_connection* connection;
+ibmsg_socket* connection;
 
 
 void
-connection_established(ibmsg_connection* connection)
+connection_established(ibmsg_socket* connection)
 {
 	printf("connection established\n");
 }
@@ -17,12 +17,12 @@ connection_established(ibmsg_connection* connection)
 void
 connection_request(ibmsg_connection_request* request)
 {
-	connection = malloc(sizeof(ibmsg_connection));
+	connection = malloc(sizeof(ibmsg_socket));
 	ibmsg_accept(request, connection);
 }
 
 void
-message_received(ibmsg_connection* connection, ibmsg_buffer* msg)
+message_received(ibmsg_socket* connection, ibmsg_buffer* msg)
 {
 	printf("message received\n");
 	ibmsg_free_msg(msg);
@@ -59,7 +59,7 @@ main(int argc, char** argv)
 
 
 	/* Listen */
-	ibmsg_connection socket;
+	ibmsg_socket socket;
 	if(ibmsg_listen(&event_loop, &socket, ip, port, MAX_CONNECTIONS))
 	{
 		fprintf(stderr, APPLICATION_NAME": error: could not listen\n");

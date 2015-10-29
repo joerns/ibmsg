@@ -94,7 +94,7 @@ ibmsg_destroy_event_loop(ibmsg_event_loop* event_loop)
 
 
 int
-ibmsg_connect(ibmsg_event_loop* event_loop, ibmsg_connection* connection, char* ip, unsigned short port)
+ibmsg_connect(ibmsg_event_loop* event_loop, ibmsg_socket* connection, char* ip, unsigned short port)
 {
     struct rdma_addrinfo* address_results;                                                                                                                         
     struct sockaddr_in dst_addr;                                                                                                                                   
@@ -116,7 +116,7 @@ ibmsg_connect(ibmsg_event_loop* event_loop, ibmsg_connection* connection, char* 
 }
 
 
-int ibmsg_disconnect(ibmsg_connection* connection)
+int ibmsg_disconnect(ibmsg_socket* connection)
 {
     connection->status = IBMSG_DISCONNECTING;
     CHECK_CALL( rdma_disconnect(connection->cmid), IBMSG_DISCONNECT_FAILED );
@@ -125,7 +125,7 @@ int ibmsg_disconnect(ibmsg_connection* connection)
 
 
 int
-ibmsg_alloc_msg(ibmsg_buffer* msg, ibmsg_connection* connection, size_t size)
+ibmsg_alloc_msg(ibmsg_buffer* msg, ibmsg_socket* connection, size_t size)
 {
     void* buffer = malloc(size);
     if(!buffer)
@@ -156,7 +156,7 @@ ibmsg_free_msg(ibmsg_buffer* msg)
 
 
 int
-ibmsg_post_send(ibmsg_connection* connection, ibmsg_buffer* msg)
+ibmsg_post_send(ibmsg_socket* connection, ibmsg_buffer* msg)
 {
     CHECK_CALL( rdma_post_send(connection->cmid, msg /* wrid */, msg->data, msg->size, msg->mr, 0), IBMSG_POST_SEND_FAILED );
     return IBMSG_OK;
@@ -164,7 +164,7 @@ ibmsg_post_send(ibmsg_connection* connection, ibmsg_buffer* msg)
 
 
 int
-ibmsg_listen(ibmsg_event_loop* event_loop, ibmsg_connection* socket, char* ip, short port, int max_connections)
+ibmsg_listen(ibmsg_event_loop* event_loop, ibmsg_socket* socket, char* ip, short port, int max_connections)
 {
     struct sockaddr_in src_addr;
 
@@ -208,7 +208,7 @@ init_conn_param(struct rdma_conn_param* conn_param)
 
 
 int
-ibmsg_accept(ibmsg_connection_request* request, ibmsg_connection* connection)
+ibmsg_accept(ibmsg_connection_request* request, ibmsg_socket* connection)
 {
     struct ibv_qp_init_attr qp_init_attr;
     struct rdma_conn_param conn_param;
@@ -227,7 +227,7 @@ ibmsg_accept(ibmsg_connection_request* request, ibmsg_connection* connection)
 
 
 static void
-free_connection(ibmsg_connection* connection)
+free_connection(ibmsg_socket* connection)
 {
     rdma_destroy_qp(connection->cmid);
     rdma_destroy_id(connection->cmid);
@@ -236,7 +236,7 @@ free_connection(ibmsg_connection* connection)
 
 
 static int
-add_connection_to_epoll(int epollfd, ibmsg_connection* connection)
+add_connection_to_epoll(int epollfd, ibmsg_socket* connection)
 {
     struct epoll_event ev;
     int fd;
@@ -272,7 +272,7 @@ add_connection_to_epoll(int epollfd, ibmsg_connection* connection)
 
 
 static int
-remove_connection_from_epoll(int epollfd, ibmsg_connection* connection)
+remove_connection_from_epoll(int epollfd, ibmsg_socket* connection)
 {
     int fd;
 
@@ -293,7 +293,7 @@ remove_connection_from_epoll(int epollfd, ibmsg_connection* connection)
 
 
 static void
-post_receive(ibmsg_connection* connection)
+post_receive(ibmsg_socket* connection)
 {
     ibmsg_buffer* msg = &connection->recv_buffer;
     if(ibmsg_alloc_msg(msg, connection, IBMSG_MAX_MSGSIZE) != IBMSG_OK)
@@ -310,7 +310,7 @@ post_receive(ibmsg_connection* connection)
 static void
 process_rdma_event(ibmsg_event_loop* event_loop, struct rdma_cm_event* event)
 {
-    ibmsg_connection* connection = (ibmsg_connection*)event->id->context;
+    ibmsg_socket* connection = (ibmsg_socket*)event->id->context;
     struct ibv_qp_init_attr qp_init_attr;
     struct rdma_conn_param conn_param;
     ibmsg_connection_request request;
@@ -430,7 +430,7 @@ ibmsg_dispatch_event_loop(ibmsg_event_loop* event_loop)
         }
         else if(data->type == IBMSG_SEND_COMPLETION)
         {
-            ibmsg_connection* connection = data->ptr;
+            ibmsg_socket* connection = data->ptr;
             int n_completions = rdma_get_send_comp(connection->cmid, &wc);
             if(n_completions == -1)
             {
@@ -445,7 +445,7 @@ ibmsg_dispatch_event_loop(ibmsg_event_loop* event_loop)
         }
         else if(data->type == IBMSG_RECV_COMPLETION)
         {
-            ibmsg_connection* connection = data->ptr;
+            ibmsg_socket* connection = data->ptr;
             int n_completions = rdma_get_recv_comp(connection->cmid, &wc);
             if(n_completions == -1)
             {

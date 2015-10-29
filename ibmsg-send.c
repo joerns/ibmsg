@@ -31,7 +31,7 @@ main(int argc, char** argv)
 
 
 	/* Connect */
-	ibmsg_connection connection;
+	ibmsg_socket connection;
 	if(ibmsg_connect(&event_loop, &connection, ip, port))
 	{
 		fprintf(stderr, APPLICATION_NAME": error: could not connect to remote host\n");

@@ -69,12 +69,16 @@ typedef struct
         IBMSG_DISCONNECTING,
         IBMSG_ERROR
     } status;
-
+    enum {
+        IBMSG_LISTEN_SOCKET,
+        IBMSG_RECV_SOCKET,
+        IBMSG_SEND_SOCKET
+    } socket_type;
     ibmsg_buffer recv_buffer;
 
     struct _ibmsg_event_description send_event_description;
     struct _ibmsg_event_description recv_event_description;
-} ibmsg_connection;
+} ibmsg_socket;
 
 typedef struct
 {
@@ -83,8 +87,8 @@ typedef struct
 
     /* callbacks */
     void (*connection_request)(ibmsg_connection_request*);
-    void (*connection_established)(ibmsg_connection*);
-    void (*message_received)(ibmsg_connection*, ibmsg_buffer*);
+    void (*connection_established)(ibmsg_socket*);
+    void (*message_received)(ibmsg_socket*, ibmsg_buffer*);
 
     struct _ibmsg_event_description event_description;
 } ibmsg_event_loop;
@@ -92,13 +96,13 @@ typedef struct
 
 int ibmsg_init_event_loop(ibmsg_event_loop* event_loop);
 int ibmsg_destroy_event_loop(ibmsg_event_loop* event_loop);
-int ibmsg_connect(ibmsg_event_loop* event_loop, ibmsg_connection* connection, char* ip, unsigned short port);
-int ibmsg_disconnect(ibmsg_connection* connection);
-int ibmsg_listen(ibmsg_event_loop* event_loop, ibmsg_connection* socket, char* ip, short port, int max_connections);
-int ibmsg_accept(ibmsg_connection_request* request, ibmsg_connection* connection);
-int ibmsg_alloc_msg(ibmsg_buffer* msg, ibmsg_connection* connection, size_t size);
+int ibmsg_connect(ibmsg_event_loop* event_loop, ibmsg_socket* connection, char* ip, unsigned short port);
+int ibmsg_disconnect(ibmsg_socket* socket);
+int ibmsg_listen(ibmsg_event_loop* event_loop, ibmsg_socket* socket, char* ip, short port, int max_connections);
+int ibmsg_accept(ibmsg_connection_request* request, ibmsg_socket* connection);
+int ibmsg_alloc_msg(ibmsg_buffer* msg, ibmsg_socket* connection, size_t size);
 int ibmsg_free_msg(ibmsg_buffer* msg);
-int ibmsg_post_send(ibmsg_connection* connection, ibmsg_buffer* msg);
+int ibmsg_post_send(ibmsg_socket* connection, ibmsg_buffer* msg);
 int ibmsg_dispatch_event_loop(ibmsg_event_loop* event_loop);
 
 #endif
