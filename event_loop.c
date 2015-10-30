@@ -182,6 +182,55 @@ process_rdma_event(ibmsg_event_loop* event_loop, struct rdma_cm_event* event)
 }
 
 
+static int
+process_send_socket_send_completion(ibmsg_socket* connection)
+{
+    struct ibv_wc wc;
+    int n_completions = rdma_get_send_comp(connection->cmid, &wc);
+    if(n_completions == -1)
+    {
+        LOG("send completion error: %d ('%s')", errno, strerror(errno));
+        return IBMSG_FETCH_EVENT_FAILED;
+    }
+
+    ibmsg_buffer* msg = (ibmsg_buffer*) wc.wr_id;
+    msg->status = IBMSG_SENT;
+    LOG( "%d send completion(s) found", n_completions);
+    LOG( "SEND complete: WRID 0x%llx", (long long unsigned)wc.wr_id );
+    return 0;
+}
+
+
+static int
+process_recv_socket_recv_completion(ibmsg_event_loop* event_loop, ibmsg_socket* connection)
+{
+    struct ibv_wc wc;
+    int n_completions = rdma_get_recv_comp(connection->cmid, &wc);
+    if(n_completions == -1)
+    {
+        LOG("recv completion error: %d ('%s')", errno, strerror(errno));
+        return IBMSG_FETCH_EVENT_FAILED;
+    }
+
+    ibmsg_buffer* msg = (ibmsg_buffer*) (wc.wr_id);
+    msg->status = IBMSG_RECEIVED;
+    LOG( "%d recv completion(s) found", n_completions);
+    LOG( "RECV complete: WRID 0x%llx", (long long unsigned)msg );
+    if(event_loop->message_received)
+    {
+        event_loop->message_received(connection, msg);
+    }
+    else
+    {
+        if(ibmsg_free_msg(msg))
+            return IBMSG_FREE_BUFFER_FAILED;
+    }
+    if(connection->status == IBMSG_CONNECTED)
+        post_receive(connection);
+    return 0;
+}
+
+
 int
 ibmsg_dispatch_event_loop(ibmsg_event_loop* event_loop)
 {
@@ -198,55 +247,33 @@ ibmsg_dispatch_event_loop(ibmsg_event_loop* event_loop)
     LOG("Found %d event(s)", nfds);
     struct rdma_cm_event *cm_event;
     struct _ibmsg_event_description* data;
-    struct ibv_wc wc;
+    ibmsg_socket* connection;
+    int result;
     for(int i=0; i<nfds; i++)
     {
         data = events[i].data.ptr;
-        if(data->type == IBMSG_CMA)
+        switch(data->type)
         {
+        case IBMSG_CMA:
             CHECK_CALL( rdma_get_cm_event (event_loop->event_channel, &cm_event), IBMSG_FETCH_EVENT_FAILED );
             process_rdma_event(event_loop, cm_event);
-        }
-        else if(data->type == IBMSG_SEND_COMPLETION)
-        {
-            ibmsg_socket* connection = data->ptr;
-            int n_completions = rdma_get_send_comp(connection->cmid, &wc);
-            if(n_completions == -1)
+            break;
+        case IBMSG_SEND_COMPLETION:
+            connection = data->ptr;
+            if(connection->socket_type == IBMSG_SEND_SOCKET)
             {
-                LOG("send completion error: %d ('%s')", errno, strerror(errno));
-                return IBMSG_FETCH_EVENT_FAILED;
+                if((result = process_send_socket_send_completion((ibmsg_socket*)data->ptr)))
+                    return result; 
             }
-
-            ibmsg_buffer* msg = (ibmsg_buffer*) wc.wr_id;
-            msg->status = IBMSG_SENT;
-            LOG( "%d send completion(s) found", n_completions);
-            LOG( "SEND complete: WRID 0x%llx", (long long unsigned)wc.wr_id );
-        }
-        else if(data->type == IBMSG_RECV_COMPLETION)
-        {
-            ibmsg_socket* connection = data->ptr;
-            int n_completions = rdma_get_recv_comp(connection->cmid, &wc);
-            if(n_completions == -1)
+            break;
+        case IBMSG_RECV_COMPLETION:
+            connection = data->ptr;
+            if(connection->socket_type == IBMSG_RECV_SOCKET)
             {
-                LOG("recv completion error: %d ('%s')", errno, strerror(errno));
-                return IBMSG_FETCH_EVENT_FAILED;
+                if((result = process_recv_socket_recv_completion(event_loop, (ibmsg_socket*)data->ptr)))
+                    return result;
             }
-
-            ibmsg_buffer* msg = (ibmsg_buffer*) (wc.wr_id);
-            msg->status = IBMSG_RECEIVED;
-            LOG( "%d recv completion(s) found", n_completions);
-            LOG( "RECV complete: WRID 0x%llx", (long long unsigned)msg );
-            if(event_loop->message_received)
-            {
-                event_loop->message_received(connection, msg);
-            }
-            else
-            {
-                if(ibmsg_free_msg(msg))
-                    return IBMSG_FREE_BUFFER_FAILED;
-            }
-            if(connection->status == IBMSG_CONNECTED)
-                post_receive(connection);
+            break;
         }
     }
 

@@ -57,6 +57,7 @@ ibmsg_connect(ibmsg_event_loop* event_loop, ibmsg_socket* connection, char* ip, 
     snprintf(service, 16, "%d", port);
 
     connection->status = IBMSG_UNCONNECTED;
+    connection->socket_type = IBMSG_SEND_SOCKET;
 
     memset(&dst_addr, 0, sizeof dst_addr);                                                                                                                         
     dst_addr.sin_family = AF_INET;                                                                                                                                 
@@ -127,6 +128,8 @@ ibmsg_listen(ibmsg_event_loop* event_loop, ibmsg_socket* socket, char* ip, short
     src_addr.sin_port = htons(port);
     inet_pton(AF_INET, ip, &src_addr.sin_addr);
 
+    socket->socket_type = IBMSG_LISTEN_SOCKET;
+
     CHECK_CALL( rdma_create_id (event_loop->event_channel, &socket->cmid, NULL, RDMA_PS_TCP), IBMSG_CREATE_ID_FAILED );
     CHECK_CALL( rdma_bind_addr (socket->cmid, (struct sockaddr*)&src_addr), IBMSG_BIND_FAILED );
     CHECK_CALL( rdma_listen (socket->cmid, max_connections), IBMSG_LISTEN_FAILED );
@@ -150,6 +153,7 @@ ibmsg_accept(ibmsg_connection_request* request, ibmsg_socket* connection)
     request->status = IBMSG_ACCEPTED;
     connection->cmid = request->cmid;
     connection->cmid->context = connection;
+    connection->socket_type = IBMSG_RECV_SOCKET;
     return IBMSG_OK;
 }
 
